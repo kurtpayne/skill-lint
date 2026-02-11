@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skilllint"
+version = "0.1.0"
+description = "Offline quality + security linter for AI skills"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Kurt Payne" }]
+dependencies = [
+  "pyyaml>=6.0"
+]
+
+[project.scripts]
+skilllint = "skilllint.cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

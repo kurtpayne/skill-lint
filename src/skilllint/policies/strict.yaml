@@ -1,0 +1,16 @@
+version: 1
+name: strict
+quality:
+  readability_min: 75
+  complexity_max: 25
+  structure_min: 85
+  consistency_min: 90
+  completeness_min: 95
+  maintainability_min: 80
+  precision_min: 85
+  security_integration_min: 80
+security:
+  fail_on:
+    - critical
+    - high
+    - medium
