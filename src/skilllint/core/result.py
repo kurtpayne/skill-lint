@@ -7,7 +7,7 @@ from typing import Any, Optional
 @dataclass
 class Finding:
     id: str
-    source: str  # quality | security
+    source: str  # finding source category (reserved)
     severity: str  # low | medium | high | critical
     confidence: float
     category: str

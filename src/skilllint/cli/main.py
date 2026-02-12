@@ -7,7 +7,7 @@ from pathlib import Path
 
 from skilllint.core.analyzer import analyze
 from skilllint.core.file_handler import iter_candidate_files
-from skilllint.core.policy import load_policy, should_fail
+from skilllint.core.policy import load_policy
 from skilllint.fixes.safe_fixes import apply_safe_fixes
 
 
@@ -18,20 +18,11 @@ def _to_markdown(result: dict) -> str:
         "",
         f"- Target: `{result['target']}`",
         f"- Files scanned: **{s['files_scanned']}**",
-        f"- Findings: **{s['findings_total']}**",
         f"- Quality overall: **{s['quality_overall']}**",
         "",
-        "## Severity",
+        "## Metric Averages",
     ]
-    for k, v in s["by_severity"].items():
-        lines.append(f"- {k}: {v}")
 
-    lines.append("\n## Top Findings")
-    for f in result["findings"][:40]:
-        loc = f"{f['file']}:{f['line_start']}" if f.get("line_start") else f["file"]
-        lines.append(f"- **[{f['severity'].upper()}]** {f['title']} ({loc})")
-
-    lines.append("\n## Metric Averages")
     by_name: dict[str, list[float]] = defaultdict(list)
     for m in result["metrics"]:
         by_name[m["name"]].append(float(m["score"]))
@@ -60,11 +51,8 @@ def _evaluate_quality(policy: dict, result: dict) -> list[str]:
     check_min("completeness", "completeness_min")
     check_min("maintainability", "maintainability_min")
     check_min("precision", "precision_min")
-    check_min("security_integration", "security_integration_min")
 
-    # complexity policy expressed as max raw complexity; our normalized score inverts.
     if "complexity_max" in quality:
-        # convert raw max threshold to normalized minimum score heuristic
         raw_max = float(quality["complexity_max"])
         normalized_min = max(0.0, min(100.0, 100.0 - (raw_max * 2.0)))
         if avg.get("complexity", 0.0) < normalized_min:
@@ -82,28 +70,15 @@ def cmd_scan(args: argparse.Namespace) -> int:
     res = res_obj.to_dict()
 
     quality_failures = _evaluate_quality(policy, res)
-    sec_fail_on = policy.get("security", {}).get("fail_on", ["critical", "high"])
-    sec_failure = should_fail(res["summary"]["by_severity"], sec_fail_on)
 
     if args.format == "json":
-        out = json.dumps(
-            {
-                **res,
-                "policy": {
-                    "name": policy.get("name", "custom"),
-                    "security_fail_on": sec_fail_on,
-                    "intel": policy.get("security", {}).get("intel", {}),
-                },
-                "quality_failures": quality_failures,
-            },
-            indent=2,
-        )
+        out = json.dumps({**res, "policy": {"name": policy.get("name", "custom")}, "quality_failures": quality_failures}, indent=2)
     elif args.format == "markdown":
         out = _to_markdown(res)
         if quality_failures:
             out += "\n\n## Quality Gate Failures\n" + "\n".join(f"- {x}" for x in quality_failures)
     else:
-        out = f"SkillLint: scanned {res['summary']['files_scanned']} files, findings={res['summary']['findings_total']}, quality={res['summary']['quality_overall']}"
+        out = f"SkillLint: scanned {res['summary']['files_scanned']} files, quality={res['summary']['quality_overall']}"
         if quality_failures:
             out += f" | quality_failures={len(quality_failures)}"
 
@@ -112,7 +87,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     else:
         print(out)
 
-    if not args.no_fail and (sec_failure or bool(quality_failures)):
+    if not args.no_fail and bool(quality_failures):
         return 2
     return 0
 
@@ -133,7 +108,7 @@ def cmd_fix(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="skilllint", description="Offline quality + security linter for AI skills")
+    p = argparse.ArgumentParser(prog="skilllint", description="Offline quality linter for AI skills")
     sp = p.add_subparsers(dest="command", required=True)
 
     scan = sp.add_parser("scan", help="Scan a file or directory")

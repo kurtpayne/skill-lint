@@ -8,13 +8,3 @@ quality:
   completeness_min: 95
   maintainability_min: 80
   precision_min: 85
-  security_integration_min: 80
-security:
-  fail_on:
-    - critical
-    - high
-    - medium
-  intel:
-    mode: bundled
-    ai_assisted: false
-    allow_remote: false

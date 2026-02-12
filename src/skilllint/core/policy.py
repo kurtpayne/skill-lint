@@ -16,20 +16,12 @@ DEFAULT_POLICY = {
         "completeness_min": 90,
         "maintainability_min": 70,
         "precision_min": 80,
-        "security_integration_min": 75,
-    },
-    "security": {
-        "fail_on": ["critical", "high"],
-        "intel": {"mode": "bundled", "ai_assisted": False, "allow_remote": False},
     },
 }
 
 
 def _tiny_yaml_load(text: str) -> dict[str, Any]:
-    """Very small YAML-ish loader for project policy files.
-
-    Supports simple nested maps/lists used by our default policies.
-    """
+    """Very small YAML-ish loader for simple policy maps."""
     data: dict[str, Any] = {}
     stack: list[tuple[int, Any]] = [(0, data)]
 
@@ -43,25 +35,17 @@ def _tiny_yaml_load(text: str) -> dict[str, Any]:
             stack.pop()
         parent = stack[-1][1]
 
-        if line.startswith("- "):
-            item = line[2:].strip()
-            if isinstance(parent, list):
-                parent.append(item)
-            continue
-
         if ":" not in line:
             continue
         k, v = [x.strip() for x in line.split(":", 1)]
 
         if v == "":
-            # create nested map by default; switch to list if next lines are '- '
             node: Any = {}
             if isinstance(parent, dict):
                 parent[k] = node
             stack.append((indent + 2, node))
             continue
 
-        # scalar parse
         if v.isdigit():
             sv: Any = int(v)
         elif v.lower() in {"true", "false"}:
@@ -72,25 +56,6 @@ def _tiny_yaml_load(text: str) -> dict[str, Any]:
         if isinstance(parent, dict):
             parent[k] = sv
 
-    # post-pass for known list under security.fail_on in minimal policies
-    if "security" in data and isinstance(data["security"], dict):
-        sec = data["security"]
-        if "fail_on" in sec and isinstance(sec["fail_on"], dict) and not sec["fail_on"]:
-            # couldn't infer list; try regex extraction
-            values = []
-            in_block = False
-            for raw in text.splitlines():
-                if raw.strip().startswith("fail_on:"):
-                    in_block = True
-                    continue
-                if in_block:
-                    s = raw.strip()
-                    if s.startswith("- "):
-                        values.append(s[2:].strip())
-                    elif s and not s.startswith("#") and not raw.startswith(" " * 4):
-                        break
-            sec["fail_on"] = values
-
     return data
 
 
@@ -100,7 +65,6 @@ def load_policy(path: Path | None) -> dict[str, Any]:
 
     text = path.read_text(encoding="utf-8")
 
-    # Try JSON first
     try:
         obj = json.loads(text)
         if isinstance(obj, dict):
@@ -108,7 +72,6 @@ def load_policy(path: Path | None) -> dict[str, Any]:
     except Exception:
         pass
 
-    # Try PyYAML if available
     try:
         import yaml  # type: ignore
 
@@ -118,9 +81,4 @@ def load_policy(path: Path | None) -> dict[str, Any]:
     except Exception:
         pass
 
-    # tiny fallback parser
     return _tiny_yaml_load(text)
-
-
-def should_fail(findings_by_severity: dict[str, int], fail_on: list[str]) -> bool:
-    return any(findings_by_severity.get(level, 0) > 0 for level in fail_on)

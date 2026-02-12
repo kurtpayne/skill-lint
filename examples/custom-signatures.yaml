@@ -1,9 +1,0 @@
-version: 1
-patterns:
-  injection:
-    - id: custom-ignore-all
-      regex: "ignore all safeguards"
-      severity: high
-      confidence: 0.88
-      title: Custom safeguard bypass phrase
-      remediation: Reject instruction override phrases.
