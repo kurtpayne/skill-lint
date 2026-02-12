@@ -9,6 +9,7 @@ from skilllint.analyzers.quality.maintainability import score_maintainability
 from skilllint.analyzers.quality.precision import score_precision
 from skilllint.analyzers.quality.readability import score_readability
 from skilllint.analyzers.quality.structure import score_structure
+from skilllint.analyzers.quality.lints import analyze_quality_lints
 from skilllint.core.file_handler import iter_candidate_files
 from skilllint.core.result import ScanResult
 
@@ -38,11 +39,15 @@ def analyze(target: Path, policy: dict | None = None) -> ScanResult:
                     score_precision(text),
                 ]
             )
+            result.findings.extend(analyze_quality_lints(file_path, text))
 
         result.summary.files_scanned += 1
 
-    result.summary.findings_total = 0
-    result.summary.by_severity = {}
+    sev = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    for f in result.findings:
+        sev[f.severity] = sev.get(f.severity, 0) + 1
+    result.summary.findings_total = len(result.findings)
+    result.summary.by_severity = sev
     if result.metrics:
         result.summary.quality_overall = round(sum(m.score for m in result.metrics) / len(result.metrics), 2)
 

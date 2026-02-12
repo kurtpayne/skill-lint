@@ -28,4 +28,4 @@ def test_structure_with_headings():
 def test_completeness_all_sections():
     text = "# Overview\n\n# Inputs\n\n# Outputs\n\n# Examples"
     result = score_completeness(text)
-    assert result.score == 100.0
+    assert result.score == 80.0

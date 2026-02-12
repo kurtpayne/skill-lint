@@ -18,6 +18,7 @@ def _to_markdown(result: dict) -> str:
         "",
         f"- Target: `{result['target']}`",
         f"- Files scanned: **{s['files_scanned']}**",
+        f"- Findings: **{s['findings_total']}**",
         f"- Quality overall: **{s['quality_overall']}**",
         "",
         "## Metric Averages",
@@ -29,6 +30,11 @@ def _to_markdown(result: dict) -> str:
     for name in sorted(by_name):
         avg = sum(by_name[name]) / len(by_name[name])
         lines.append(f"- {name}: {avg:.2f}")
+
+    if result.get("findings"):
+        lines.append("\n## Top Lint Findings")
+        for f in result["findings"][:20]:
+            lines.append(f"- **[{f['severity'].upper()}]** {f['title']} ({f['file']})")
     return "\n".join(lines)
 
 
@@ -78,7 +84,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         if quality_failures:
             out += "\n\n## Quality Gate Failures\n" + "\n".join(f"- {x}" for x in quality_failures)
     else:
-        out = f"SkillLint: scanned {res['summary']['files_scanned']} files, quality={res['summary']['quality_overall']}"
+        out = f"SkillLint: scanned {res['summary']['files_scanned']} files, findings={res['summary']['findings_total']}, quality={res['summary']['quality_overall']}"
         if quality_failures:
             out += f" | quality_failures={len(quality_failures)}"
 
