@@ -24,8 +24,10 @@ SkillLint is the only offline tool that checks **both quality AND security** for
 - Prompt injection patterns
 - Malware-like execution patterns
 - Data exfiltration indicators
-- Supply chain issues (unpinned dependencies)
+- Secret exposure indicators
+- Supply chain issues (unpinned/floating dependencies)
 - Binary artifact detection
+- Configurable offline intel signatures (bundled or local file)
 
 ### ✨ Auto-Fix
 - **Level 1 (Safe)**: Auto-applied fixes
@@ -135,6 +137,7 @@ skilllint scan third-party-skill/ --policy strict.yaml
 
 - [Quick Start Guide](docs/QUICKSTART.md)
 - [Examples](docs/EXAMPLES.md)
+- [PRD Traceability Matrix](docs/PRD_TRACEABILITY.md)
 - [Implementation Plan](IMPLEMENTATION_PLAN.md)
 
 ## Architecture
