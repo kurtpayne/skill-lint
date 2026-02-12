@@ -16,7 +16,8 @@ from skilllint.analyzers.security.injection import analyze as scan_injection
 from skilllint.analyzers.security.malware import analyze as scan_malware
 from skilllint.analyzers.security.supply_chain import analyze as scan_supply
 from skilllint.core.file_handler import iter_candidate_files
-from skilllint.core.result import ScanResult, ScanSummary
+from skilllint.core.intel import load_intel_bundle, resolve_intel_config
+from skilllint.core.result import ScanResult
 
 
 def _read_file(path: Path) -> str:
@@ -26,13 +27,16 @@ def _read_file(path: Path) -> str:
         return ""
 
 
-def analyze(target: Path) -> ScanResult:
+def analyze(target: Path, policy: dict | None = None) -> ScanResult:
     result = ScanResult(target=str(target))
+    policy = policy or {}
+
+    intel_cfg = resolve_intel_config(policy)
+    intel = load_intel_bundle(intel_cfg, target if target.is_dir() else target.parent)
 
     for file_path in iter_candidate_files(target):
         text = _read_file(file_path)
 
-        # quality metrics
         if text:
             result.metrics.extend(
                 [
@@ -47,16 +51,14 @@ def analyze(target: Path) -> ScanResult:
                 ]
             )
 
-        # security findings
-        result.findings.extend(scan_malware(file_path, text))
-        result.findings.extend(scan_injection(file_path, text))
-        result.findings.extend(scan_exfil(file_path, text))
-        result.findings.extend(scan_supply(file_path, text))
+        result.findings.extend(scan_malware(file_path, text, intel.patterns.get("malware", [])))
+        result.findings.extend(scan_injection(file_path, text, intel.patterns.get("injection", [])))
+        result.findings.extend(scan_exfil(file_path, text, intel.patterns.get("exfiltration", [])))
+        result.findings.extend(scan_supply(file_path, text, intel.patterns.get("supply_chain", [])))
         result.findings.extend(scan_binary(file_path, text))
 
         result.summary.files_scanned += 1
 
-    # summarize
     sev = {"critical": 0, "high": 0, "medium": 0, "low": 0}
     for f in result.findings:
         sev[f.severity] = sev.get(f.severity, 0) + 1

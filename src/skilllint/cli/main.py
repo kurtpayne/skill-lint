@@ -78,7 +78,7 @@ def _evaluate_quality(policy: dict, result: dict) -> list[str]:
 def cmd_scan(args: argparse.Namespace) -> int:
     target = Path(args.target)
     policy = load_policy(Path(args.policy) if args.policy else None)
-    res_obj = analyze(target)
+    res_obj = analyze(target, policy=policy)
     res = res_obj.to_dict()
 
     quality_failures = _evaluate_quality(policy, res)
@@ -89,7 +89,11 @@ def cmd_scan(args: argparse.Namespace) -> int:
         out = json.dumps(
             {
                 **res,
-                "policy": {"name": policy.get("name", "custom"), "security_fail_on": sec_fail_on},
+                "policy": {
+                    "name": policy.get("name", "custom"),
+                    "security_fail_on": sec_fail_on,
+                    "intel": policy.get("security", {}).get("intel", {}),
+                },
                 "quality_failures": quality_failures,
             },
             indent=2,

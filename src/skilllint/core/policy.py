@@ -18,7 +18,10 @@ DEFAULT_POLICY = {
         "precision_min": 80,
         "security_integration_min": 75,
     },
-    "security": {"fail_on": ["critical", "high"]},
+    "security": {
+        "fail_on": ["critical", "high"],
+        "intel": {"mode": "bundled", "ai_assisted": False, "allow_remote": False},
+    },
 }
 
 

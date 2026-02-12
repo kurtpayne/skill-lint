@@ -13,3 +13,7 @@ security:
   fail_on:
     - critical
     - high
+  intel:
+    mode: bundled
+    ai_assisted: false
+    allow_remote: false

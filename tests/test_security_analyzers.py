@@ -3,6 +3,7 @@ from pathlib import Path
 from skilllint.analyzers.security.injection import analyze as scan_injection
 from skilllint.analyzers.security.malware import analyze as scan_malware
 from skilllint.analyzers.security.exfiltration import analyze as scan_exfil
+from skilllint.analyzers.security.supply_chain import analyze as scan_supply
 
 
 def test_injection_detection():
@@ -25,6 +26,20 @@ def test_exfil_url():
     findings = scan_exfil(Path("test.md"), text)
     assert len(findings) > 0
     assert findings[0].category == "exfiltration"
+
+
+def test_supply_chain_floating_ref_detected():
+    text = "mydep @ git+https://github.com/org/repo@main"
+    findings = scan_supply(Path("requirements.txt"), text)
+    assert findings
+    assert findings[0].category == "supply_chain"
+
+
+def test_exfil_secret_material_detected():
+    text = "OPENAI_API_KEY=sk-test"
+    findings = scan_exfil(Path("test.md"), text)
+    assert findings
+    assert any(f.severity == "critical" for f in findings)
 
 
 def test_clean_text_no_findings():

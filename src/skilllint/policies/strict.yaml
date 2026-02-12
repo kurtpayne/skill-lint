@@ -14,3 +14,7 @@ security:
     - critical
     - high
     - medium
+  intel:
+    mode: bundled
+    ai_assisted: false
+    allow_remote: false
